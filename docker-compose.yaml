@@ -1,0 +1,66 @@
+# nginx proxy address - http://172.17.0.1:8080
+
+name: nocodb
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: nocodb/nocodb:latest
+    container_name: nocodb-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      NC_DB: pg://nocodb-db:5432?u=${DB_USER_NAME:-nocodb}&p=${DB_USER_PASS:-changeme_db_password}&d=${DB_CREATE_DATABASE_NAME:-nocodb}
+      NC_AUTH_JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_token}
+      NC_PUBLIC_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
+      NC_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
+      NC_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
+      NC_SMTP_USERNAME: ${EMAIL_SERVER_LOGIN_NAME:-}
+      NC_SMTP_PASSWORD: ${EMAIL_SERVER_LOGIN_PASS:-}
+      NC_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}}
+      NC_SMTP_SECURE: "false"
+      NC_ADMIN_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}
+      NC_ADMIN_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
+    ports:
+      - '172.17.0.1:8080:8080'
+    volumes:
+      - './rootfs/data/nocodb:/usr/app/data'
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - nocodb
+
+  db:
+    image: postgres:16-alpine
+    container_name: nocodb-db
+    hostname: nocodb-db
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-nocodb}
+      POSTGRES_USER: ${DB_USER_NAME:-nocodb}
+      POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+    volumes:
+      - './rootfs/db/postgres/nocodb:/var/lib/postgresql/data'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER_NAME:-nocodb}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nocodb
+
+networks:
+  nocodb:
+    name: nocodb
+    external: false
