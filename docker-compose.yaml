@@ -31,7 +31,7 @@ services:
     ports:
       - '172.17.0.1:8080:8080'
     volumes:
-      - './rootfs/data/nocodb:/usr/app/data'
+      - './volumes/data/nocodb:/usr/app/data'
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +51,7 @@ services:
       POSTGRES_USER: ${DB_USER_NAME:-nocodb}
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
     volumes:
-      - './rootfs/data/db/postgres/nocodb:/var/lib/postgresql/data'
+      - './volumes/data/db/postgres/nocodb:/var/lib/postgresql/data'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER_NAME:-nocodb}']
       interval: 10s
