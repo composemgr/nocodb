@@ -57,8 +57,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/nocodb` - Data storage
-- `./rootfs/data/db/postgres/nocodb` - Data storage
+- `./volumes/data/nocodb` - Data storage
+- `./volumes/data/db/postgres/nocodb` - Data storage
 
 ## 🔐 Security
 
