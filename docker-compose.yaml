@@ -18,15 +18,15 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       NC_DB: pg://nocodb-db:5432?u=${DB_USER_NAME:-nocodb}&p=${DB_USER_PASS:-changeme_db_password}&d=${DB_CREATE_DATABASE_NAME:-nocodb}
-      NC_AUTH_JWT_SECRET: ${APP_JWT_TOKEN:-changeme_jwt_token}
+      NC_AUTH_JWT_SECRET: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
       NC_PUBLIC_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
       NC_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
       NC_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
-      NC_SMTP_USERNAME: ${EMAIL_SERVER_LOGIN_NAME:-}
-      NC_SMTP_PASSWORD: ${EMAIL_SERVER_LOGIN_PASS:-}
-      NC_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}}
+      NC_SMTP_USERNAME: ${EMAIL_SERVER_USER:-}
+      NC_SMTP_PASSWORD: ${EMAIL_SERVER_PASS:-}
+      NC_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@example.com}
       NC_SMTP_SECURE: "false"
-      NC_ADMIN_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}
+      NC_ADMIN_EMAIL: ${APP_ADMIN_USER:-administrator}@${BASE_DOMAIN_NAME:-example.com}
       NC_ADMIN_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
     ports:
       - '172.17.0.1:8080:8080'
@@ -39,7 +39,7 @@ services:
       - nocodb
 
   db:
-    image: postgres:16-alpine
+    image: postgres:latest
     container_name: nocodb-db
     hostname: nocodb-db
     restart: always
