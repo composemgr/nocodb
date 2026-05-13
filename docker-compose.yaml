@@ -17,13 +17,15 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: nocodb-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       NC_DB: pg://nocodb-db:5432?u=${DB_USER_NAME:-nocodb}&p=${DB_USER_PASS:-changeme_db_password}&d=${DB_CREATE_DATABASE_NAME:-nocodb}
       NC_AUTH_JWT_SECRET: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
       NC_PUBLIC_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
       NC_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
       NC_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
-      NC_SMTP_USERNAME: ${EMAIL_SERVER_USER:-}
-      NC_SMTP_PASSWORD: ${EMAIL_SERVER_PASS:-}
+      NC_SMTP_USERNAME: ${EMAIL_SERVER_LOGIN_NAME:-}
+      NC_SMTP_PASSWORD: ${EMAIL_SERVER_LOGIN_PASS:-}
       NC_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@example.com}
       NC_SMTP_SECURE: "false"
       NC_ADMIN_EMAIL: ${APP_ADMIN_USER:-administrator}@${BASE_DOMAIN_NAME:-example.com}
@@ -37,6 +39,24 @@ services:
         condition: service_healthy
     networks:
       - nocodb
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://nocodb-app:8080'
+      - 'cloudflare.hostname=nocodb.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.nocodb-app.entrypoints=http'
+      - 'traefik.http.routers.nocodb-app-secure.tls=true'
+      - 'traefik.http.routers.nocodb-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.nocodb-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.nocodb-app.middlewares=nocodb-app-https-redirect'
+      - 'traefik.http.routers.nocodb-app-secure.entrypoints=https'
+      - 'traefik.http.routers.nocodb-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.nocodb-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.nocodb-app-secure.service=nocodb-app'
+      - 'traefik.http.services.nocodb-app.loadbalancer.server.port=8080'
 
   db:
     image: postgres:latest
@@ -47,6 +67,7 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: nocodb-db
       POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-nocodb}
       POSTGRES_USER: ${DB_USER_NAME:-nocodb}
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
@@ -64,3 +85,7 @@ networks:
   nocodb:
     name: nocodb
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
