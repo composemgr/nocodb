@@ -1,10 +1,12 @@
 ## 👋 Welcome to nocodb 🚀
 
-Open-source Airtable alternative - turns databases into smart spreadsheets
+The open source NoSQL database that makes PostgreSQL a spreadsheet
 
 ## 📋 Description
 
-Open-source Airtable alternative - turns databases into smart spreadsheets
+NocoDB is an open source database platform that turns any database, including
+PostgreSQL, into a spreadsheet-style interface with no-code collaboration,
+forms, and an API. This stack runs NocoDB backed by PostgreSQL.
 
 ## 🚀 Services
 
@@ -12,8 +14,7 @@ Open-source Airtable alternative - turns databases into smart spreadsheets
 
 ### Infrastructure Components
 
-- **db**: Postgres database
-
+- **db**: postgres:latest - PostgreSQL database
 
 ## 📦 Installation
 
@@ -26,7 +27,8 @@ curl -q -LSsf "https://raw.githubusercontent.com/composemgr/nocodb/main/docker-c
 ```bash
 git clone "https://github.com/composemgr/nocodb" ~/.local/srv/docker/nocodb
 cd ~/.local/srv/docker/nocodb
-docker compose up -d
+cp default.env .env
+docker compose --env-file .env up -d
 ```
 
 ### Option 3: Using composemgr
@@ -40,57 +42,96 @@ composemgr install nocodb
 
 ```shell
 TZ=America/New_York
+APP_ORG_NAME=NocoDB
+APP_ADMIN_EMAIL=admin@example.com
+APP_ADMIN_PASS=replace-with-a-random-password
+APP_SECRET_KEY=replace-with-a-random-hex-string
 DB_USER_NAME=nocodb
-APP_JWT_TOKEN=changeme_jwt_token
-EMAIL_SERVER_HOST=172.17.0.1
-EMAIL_SERVER_PORT=587
-EMAIL_SERVER_MAIL_FROM=no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME
-APP_ADMIN_USER=admin
-APP_ADMIN_PASS=changeme_admin_password
+DB_USER_PASS=replace-with-a-random-password
+DB_CREATE_DATABASE_NAME=nocodb
+EMAIL_SERVER_MAIL_FROM=no-reply@example.com
 ```
+
+`APP_ADMIN_EMAIL` and `APP_ADMIN_PASS` are only used when the database is empty,
+so the first account is created on startup. `APP_SECRET_KEY` signs JWT tokens;
+changing it after first start invalidates existing sessions.
 
 See `docker-compose.yaml` for complete list of configurable options.
 
+### Environment Files
+
+`default.env.sample` holds the full set of variables and is copied to `.env`
+before starting the stack:
+
+```bash
+cp default.env .env
+docker compose --env-file .env up -d
+```
+
+`app.env.sample` holds the app-specific overrides and is copied to `app.env`:
+
+```bash
+cp app.env.sample app.env
+```
+
+`composemgr up` applies `app.env` and `default.env` automatically. Raw
+`docker compose` commands need `--env-file .env` to pick up the same values.
+
+### Reverse Proxy
+
+Three standalone compose files ship in this repo:
+
+| File | Use |
+|------|-----|
+| `docker-compose.yaml` | Default, published on `172.17.0.1:64273` |
+| `docker-compose.traefik.yaml` | Behind an existing external `traefik` network |
+| `docker-compose.tunnel.yaml` | Behind an existing external `cloudflare` tunnel network |
+
+```bash
+docker compose -f docker-compose.traefik.yaml --env-file .env up -d
+```
+
 ## 🌐 Access
 
-- **Web Interface**: http://172.17.0.1:8080
+- **Web Interface**: http://172.17.0.1:64273
 
 ## 📂 Volumes
 
-- `./volumes/data/nocodb` - Data storage
-- `./volumes/data/db/postgres/nocodb` - Data storage
+- `./volumes/data/nocodb` - NocoDB data, uploads and file storage
+- `./volumes/data/db/postgres/nocodb` - PostgreSQL database data
 
 ## 🔐 Security
 
 - Change all default passwords before deploying to production
-- Use strong secrets for all authentication tokens
+- Set `APP_SECRET_KEY` to a strong random value before first start
 - Configure HTTPS using a reverse proxy (nginx, traefik, caddy)
+- NocoDB is an API layer over your database; restrict network access to it
 - Regularly update Docker images for security patches
 - Backup your data regularly
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f app
+docker compose --env-file .env logs -f app
 ```
 
 ## 🛠️ Management
 
 ```bash
 # Start services
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Stop services
-docker compose down
+docker compose --env-file .env down
 
 # Update to latest images
-docker compose pull && docker compose up -d
+docker compose --env-file .env pull && docker compose --env-file .env up -d
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env logs -f
 
 # Restart services
-docker compose restart
+docker compose --env-file .env restart
 ```
 
 ## 📋 Requirements
